@@ -1,56 +1,62 @@
-let cx, cy;
-let secondsRadius;
-let minutesRadius;
-let hoursRadius;
-let clockDiameter;
+// this variable will hold our shader object
+ let theShader;
+ // this variable will hold our createGraphics layer
+ let shaderTexture;
 
-function setup() {
-  createCanvas(450, 400);
-  stroke(0,0,255);
+ let theta = 0;
 
-  let radius = min(width, height) / 2;
-  secondsRadius = radius * 0.71;
-  minutesRadius = radius * 0.6;
-  hoursRadius = radius * 0.5;
-  clockDiameter = radius * 1.7;
+ let x;
+ let y;
+ let outsideRadius = 200;
+ let insideRadius = 100;
 
-  cx = width / 2;
-  cy = height / 2;
-}
+ function preload(){
+   // load the shader
+   theShader = loadShader('assets/texture.vert','assets/texture.frag');
+ }
 
-function draw() {
-  background(0);
+ function setup() {
+   // shaders require WEBGL mode to work
+   createCanvas(710, 400, WEBGL);
+   noStroke();
 
-  // Draw the clock background
-  noStroke();
-  fill(244, 122, 158);
-  ellipse(cx, cy, clockDiameter + 25, clockDiameter + 25);
-  fill(237, 34, 93);
-  ellipse(cx, cy, clockDiameter, clockDiameter);
+   // initialize the createGraphics layers
+   shaderTexture = createGraphics(710, 400, WEBGL);
 
-  // Angles for sin() and cos() start at 3 o'clock;
-  // subtract HALF_PI to make them start at the top
-  let s = map(second(), 0, 60, 0, TWO_PI) - HALF_PI;
-  let m = map(minute() + norm(second(), 0, 60), 0, 60, 0, TWO_PI) - HALF_PI;
-  let h = map(hour() + norm(minute(), 0, 60), 0, 24, 0, TWO_PI * 2) - HALF_PI;
+   // turn off the createGraphics layers stroke
+   shaderTexture.noStroke();
 
-  // Draw the hands of the clock
-  stroke(255);
-  strokeWeight(1);
-  line(cx, cy, cx + cos(s) * secondsRadius, cy + sin(s) * secondsRadius);
-  strokeWeight(2);
-  line(cx, cy, cx + cos(m) * minutesRadius, cy + sin(m) * minutesRadius);
-  strokeWeight(4);
-  line(cx, cy, cx + cos(h) * hoursRadius, cy + sin(h) * hoursRadius);
+    x = -50;
+    y = 0;
+ }
 
-  // Draw the minute ticks
-  strokeWeight(2);
-  beginShape(POINTS);
-  for (let a = 0; a < 360; a += 6) {
-    let angle = radians(a);
-    let x = cx + cos(angle) * secondsRadius;
-    let y = cy + sin(angle) * secondsRadius;
-    vertex(x, y);
-  }
-  endShape();
-}
+ function draw() {
+
+   // instead of just setting the active shader we are passing it to the createGraphics layer
+   shaderTexture.shader(theShader);
+
+   // here we're using setUniform() to send our uniform values to the shader
+   theShader.setUniform("resolution", [width, height]);
+   theShader.setUniform("time", millis() / 1000.0);
+   theShader.setUniform("mouse", [mouseX, map(mouseY, 0, height, height, 0)]);
+
+   // passing the shaderTexture layer geometry to render on
+   shaderTexture.rect(0,0,width,height);
+
+   background(255);
+
+   // pass the shader as a texture
+   texture(shaderTexture);
+
+   translate(-150, 0, 0);
+   push();
+   rotateZ(theta * mouseX * 0.0001);
+   rotateX(theta * mouseX * 0.0001);
+   rotateY(theta * mouseX * 0.0001);
+   theta += 0.05;
+   sphere(125);
+   pop();
+
+   // passing a fifth parameter to ellipse for smooth edges in 3D
+   ellipse(260,0,200,200,100);
+ }
