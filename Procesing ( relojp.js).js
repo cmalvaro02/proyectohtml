@@ -1,62 +1,56 @@
-// this variable will hold our shader object
- let theShader;
- // this variable will hold our createGraphics layer
- let shaderTexture;
+let snowflakes = []; // array to hold snowflake objects
 
- let theta = 0;
+function setup() {
+  createCanvas(400, 600);
+  fill(240);
+  noStroke();
+}
 
- let x;
- let y;
- let outsideRadius = 200;
- let insideRadius = 100;
+function draw() {
+  background('brown');
+  let t = frameCount / 60; // update time
 
- function preload(){
-   // load the shader
-   theShader = loadShader('assets/texture.vert','assets/texture.frag');
- }
+  // create a random number of snowflakes each frame
+  for (let i = 0; i < random(5); i++) {
+    snowflakes.push(new snowflake()); // append snowflake object
+  }
 
- function setup() {
-   // shaders require WEBGL mode to work
-   createCanvas(710, 400, WEBGL);
-   noStroke();
+  // loop through snowflakes with a for..of loop
+  for (let flake of snowflakes) {
+    flake.update(t); // update snowflake position
+    flake.display(); // draw snowflake
+  }
+}
 
-   // initialize the createGraphics layers
-   shaderTexture = createGraphics(710, 400, WEBGL);
+// snowflake class
+function snowflake() {
+  // initialize coordinates
+  this.posX = 0;
+  this.posY = random(-50, 0);
+  this.initialangle = random(0, 2 * PI);
+  this.size = random(2, 5);
 
-   // turn off the createGraphics layers stroke
-   shaderTexture.noStroke();
+  // radius of snowflake spiral
+  // chosen so the snowflakes are uniformly spread out in area
+  this.radius = sqrt(random(pow(width / 2, 2)));
 
-    x = -50;
-    y = 0;
- }
+  this.update = function(time) {
+    // x position follows a circle
+    let w = 0.6; // angular speed
+    let angle = w * time + this.initialangle;
+    this.posX = width / 2 + this.radius * sin(angle);
 
- function draw() {
+    // different size snowflakes fall at slightly different y speeds
+    this.posY += pow(this.size, 0.5);
 
-   // instead of just setting the active shader we are passing it to the createGraphics layer
-   shaderTexture.shader(theShader);
+    // delete snowflake if past end of screen
+    if (this.posY > height) {
+      let index = snowflakes.indexOf(this);
+      snowflakes.splice(index, 1);
+    }
+  };
 
-   // here we're using setUniform() to send our uniform values to the shader
-   theShader.setUniform("resolution", [width, height]);
-   theShader.setUniform("time", millis() / 1000.0);
-   theShader.setUniform("mouse", [mouseX, map(mouseY, 0, height, height, 0)]);
-
-   // passing the shaderTexture layer geometry to render on
-   shaderTexture.rect(0,0,width,height);
-
-   background(255);
-
-   // pass the shader as a texture
-   texture(shaderTexture);
-
-   translate(-150, 0, 0);
-   push();
-   rotateZ(theta * mouseX * 0.0001);
-   rotateX(theta * mouseX * 0.0001);
-   rotateY(theta * mouseX * 0.0001);
-   theta += 0.05;
-   sphere(125);
-   pop();
-
-   // passing a fifth parameter to ellipse for smooth edges in 3D
-   ellipse(260,0,200,200,100);
- }
+  this.display = function() {
+    ellipse(this.posX, this.posY, this.size);
+  };
+}
